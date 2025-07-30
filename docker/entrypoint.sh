@@ -49,10 +49,9 @@ fi
 if [ -z "$APP_KEY" ]; then
     echo "No application encryption key found. Generating a new APP_KEY..."
     APP_KEY=$(php artisan key:generate --show)
-    echo "Generated APP_KEY: $APP_KEY"
 
     # Update the .env file with the new key
-    sed -i "s/APP_KEY=/APP_KEY=$APP_KEY/" /var/www/.env
+    sed -i "s#APP_KEY=#APP_KEY=$APP_KEY#" /var/www/.env
 
     # Export the APP_KEY so it's available to the current process
     export APP_KEY
