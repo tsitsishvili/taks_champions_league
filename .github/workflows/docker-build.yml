@@ -1,0 +1,77 @@
+name: Docker Build CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  docker-build-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Copy environment file
+      run: cp .env.docker .env
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Set up Docker Compose
+      run: |
+        sudo apt-get update
+        # Install Docker Compose using the compose plugin that comes with Docker
+        # The docker-compose-plugin package is no longer available in Ubuntu repositories
+        # Docker Compose V2 is included with Docker Engine in recent versions
+        docker compose version || {
+          echo "Docker Compose not available, installing it..."
+          DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker}
+          mkdir -p $DOCKER_CONFIG/cli-plugins
+          curl -SL https://github.com/docker/compose/releases/download/v2.23.0/docker-compose-linux-x86_64 -o $DOCKER_CONFIG/cli-plugins/docker-compose
+          chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
+          docker compose version
+        }
+
+    - name: Build and start Docker containers
+      run: docker compose up -d --build
+
+    - name: Wait for containers to be ready
+      run: sleep 30
+
+    - name: Check container status
+      run: docker compose ps
+
+    - name: Check PHP container logs
+      run: docker compose logs php
+
+    - name: Verify Composer dependencies
+      run: |
+        # Check if vendor directory exists and contains files
+        docker compose exec -T php bash -c "if [ ! -d '/var/www/vendor' ] || [ -z \"\$(ls -A /var/www/vendor)\" ]; then echo 'Vendor directory is empty or missing'; exit 1; fi"
+
+        # Check for specific core dependencies
+        docker compose exec -T php bash -c "if [ ! -d '/var/www/vendor/laravel' ]; then echo 'Laravel framework not found in vendor directory'; exit 1; fi"
+        docker compose exec -T php bash -c "if [ ! -d '/var/www/vendor/symfony' ]; then echo 'Symfony components not found in vendor directory'; exit 1; fi"
+
+    - name: Verify Laravel commands
+      run: |
+        # Run Laravel artisan command to verify it works
+        docker compose exec -T php php artisan --version
+
+        # Run Tests to verify product integrity
+        docker compose exec -T php php artisan test
+
+    - name: Verify application is accessible
+      run: |
+        # Wait for web server to be ready
+        sleep 10
+
+        # Check if the application is accessible
+        curl -I http://localhost:8001
+
+    - name: Stop Docker containers
+      run: docker compose down
+      if: always()

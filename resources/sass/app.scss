@@ -1,0 +1,21 @@
+// Fonts
+@import url('https://fonts.bunny.net/css?family=Nunito');
+
+// Variables
+@import 'variables';
+
+// Tailwind CSS
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+// Custom global styles
+body {
+  background-color: #f5f8fa;
+  font-family: 'Nunito', sans-serif;
+  color: #333;
+  line-height: 1.6;
+}
+
+// Bootstrap
+@import 'bootstrap/scss/bootstrap';
