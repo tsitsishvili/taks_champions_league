@@ -5,6 +5,12 @@ services:
             dockerfile: Dockerfile
         container_name: laravel-app
         working_dir: /var/www
+        environment:
+            - APP_KEY=${APP_KEY}
+            - DB_HOST=${DB_HOST}
+            - DB_DATABASE=${DB_DATABASE}
+            - DB_USERNAME=${DB_USERNAME}
+            - DB_PASSWORD=${DB_PASSWORD}
         volumes:
             - .:/var/www
             - vendor-volume:/var/www/vendor
